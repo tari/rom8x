@@ -64,9 +64,9 @@ const char calcTypeList[][CALCTYPE_LENGTH+1] = {		//a list of supported calcType
 	"84PBE",		//2
 	"84PSE",		//3
 	"84CSE"			//4
-}
+};
 
-const char calcTypeNames[][25] = {		//a list of names (TI-style)
+const char *calcTypeNames[] = {		//a list of names (TI-style)
 	"TI-83 Plus",						//0
 	"TI-83 Plus Silver Edition",		//1
 	"TI-84 Plus",						//2
@@ -81,9 +81,9 @@ const char ModelType[] = "BSBSC";
 
 int validModel(char [], char [], int*);		//calcType, argv[1], calcModel
 int validHeader(FILE*, int, int);			//input file, type (see comments below)
-int makeBlankRom(/*FILE**/, int);			//ROM file, number of pages
-int writePage(/*FILE**/, FILE*, int);		//ROM file, dump file, page #
-int write8xu(/*FILE**/, FILE*, int);		//ROM file, OS file, calcModel
+int makeBlankRom(/*FILE*,*/ int);			//ROM file, number of pages
+int writePage(/*FILE*,*/ FILE*, int);		//ROM file, dump file, page #
+int write8xu(/*FILE*,*/ FILE*, int);		//ROM file, OS file, calcModel
 int GetOSVersion(FILE*, int*, int*);		//OS file, v_major, v_minor
 int toInt(char);							//converts numeric character to integer;
 void ExitHandler(void);
