@@ -1,38 +1,24 @@
 @echo off
-copy C:\Asm\Tasm\Tasm80.tab /A
-copy C:\Asm\Tasm\Tasm32.exe /B
-copy C:\Asm\Tasm\ti83plus.inc /A
-copy C:\Asm\Tasm\DevPac8X.com /B
 
-Tasm32 -80 -b -a -dprogName="\"83PBE\"" -dpageNum="\"1\"" -dbootPage=$1F template.z80 G83PBE1.bin
-Tasm32 -80 -b -a -dprogName="\"83PSE\"" -dpageNum="\"1\"" -dbootPage=$7F template.z80 G83PSE1.bin
-Tasm32 -80 -b -a -dprogName="\"84PBE\"" -dpageNum="\"1\"" -dbootPage=$3F template.z80 G84PBE1.bin
-Tasm32 -80 -b -a -dprogName="\"84PBE\"" -dpageNum="\"2\"" -dbootPage=$2F template.z80 G84PBE2.bin
-Tasm32 -80 -b -a -dprogName="\"84PSE\"" -dpageNum="\"1\"" -dbootPage=$7F template.z80 G84PSE1.bin
-Tasm32 -80 -b -a -dprogName="\"84PSE\"" -dpageNum="\"2\"" -dbootPage=$6F template.z80 G84PSE2.bin
-Tasm32 -80 -b -a -dprogName="\"84CSE\"" -dpageNum="\"1\"" -dbootPage=$FF template.z80 G84CSE1.bin
-Tasm32 -80 -b -a -dprogName="\"84CSE\"" -dpageNum="\"2\"" -dbootPage=$EF template.z80 G84CSE2.bin
+call :make 83PBE 1 1F
+call :make 83PSE 1 7F
+call :make 84PBE 1 3F
+call :make 84PBE 2 2F
+call :make 84PSE 1 7F
+call :make 84PSE 2 6F
+call :make 84CSE 1 FF
+call :make 84CSE 2 EF
 
-DevPac8X G83PBE1
-DevPac8X G83PSE1
-DevPac8X G84PBE1
-DevPac8X G84PBE2
-DevPac8X G84PSE1
-DevPac8X G84PSE2
-DevPac8X G84CSE1
-DevPac8X G84CSE2
+:make
+setlocal
+set NAME=-DprogName="%1"
+set NUM=-DpageNum="%2"
+set PAGE=-DbootPage=0%3h
 
-del Tasm80.tab > NUL
-del Tasm32.exe > NUL
-del ti83plus.inc > NUL
-del DevPac8X.com > NUL
+mkdir %1
+set OUT=%1/G%1%2.8xp
+echo %OUT%
+spasm %NAME% %NUM% %PAGE% template.z80 %OUT%
 
-del template.lst
-del G83PBE1.bin > NUL
-del G83PSE1.bin > NUL
-del G84PBE1.bin > NUL
-del G84PBE2.bin > NUL
-del G84PSE1.bin > NUL
-del G84PSE2.bin > NUL
-del G84CSE1.bin > NUL
-del G84CSE2.bin > NUL
+endlocal
+goto :eof

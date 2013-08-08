@@ -1,7 +1,13 @@
-.PHONY: 84CSE
-84CSE: G84CSE1.8xp G84CSE2.8xp
+CC=gcc
+CC_WIN=i486-mingw-gcc
 
-G84CSE1.8xp: template.z80
-	spasm -DprogName="\"84CSE\"" -DpageNum="\"1\"" '-DbootPage=$$FF' template.z80 G84CSE1.8xp
-G84CSE2.8xp: template.z80
-	spasm -DprogName="\"84CSE\"" -DpageNum="\"2\"" '-DbootPage=$$EF' template.z80 G84CSE2.8xp
+.PHONY: all
+all: README.txt README.html rom8x rom8x.exe
+
+rom8x: rom8x.c
+	$(CC) -o rom8x rom8x.c
+rom8x.exe: rom8x.c
+	$(CC_WIN) -o rom8x.exe rom8x.c
+
+README.%: README.md
+	pandoc -s --toc -o $@ $^

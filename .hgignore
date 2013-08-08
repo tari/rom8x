@@ -1,0 +1,7 @@
+syntax: regexp
+
+# Binary directories
+^8[34][PC][SB]E/
+
+# Generated README formats
+^README\.(?!md$)
