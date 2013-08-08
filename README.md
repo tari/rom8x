@@ -29,7 +29,7 @@ are provided for Windows and UNIX-like systems.
 The build scripts assume you have [SPASM](https://wabbit.codeplex.com/)
 on your PATH, which should work for both \*NIX and Windows users. They
 will emit .8xp files for each supported calculator into
-correspondingly-name directories.
+correspondingly-named directories.
 
 Thus, the following on a \*NIX system generates 8xp files in five
 subdirectories of the current directory:
@@ -55,6 +55,56 @@ For example, the configuration for a standard 83+ (83PBE) might be as follows:
     #define pageNum "1"
     #define bootPage 1Fh
 
-# Credits
+# Boilerplate
 
-# License
+## Contact
+
+Send questions, comments, etc to Peter Marheine: <peter@taricorp.net>.
+
+## Version History
+
+ * 0.3 - ???
+    + Add support for 84CSE (84+ Color Silver Edition)
+    + Updated build scripts (no longer use the obsolete TASM and devpac8x)
+    + Revised documentation
+ * 0.2 - 20051209
+    + Bug fix in G8?P?E programs
+    + Completely recoded form scratch in C (v0.1 was in C++)
+    + New, more flexible argument input method
+    + Allows OS upgrade file integration into the ROM
+    + Source! (released under the terms of the GNU GPL license)
+ * 0.1 - 20050802
+    + First Public Release
+
+## Credits
+
+rom8x is the work of Andree Chea, now maintained by Peter Marheine. Assistance
+was provided by the following individuals:
+
+ * Benjamin Moody (a.k.a. FloppusMaximus) for TilEm, OS Tools, and his
+   invaluable support. :)
+ * Tim Singer and Romain Liévin (and those who helped them) for making the
+   TI-XX Link Protocol Guide.
+ * Various testers for testing this package.
+
+## License
+Copyright (C) 2013 Peter Marheine <peter@taricorp.net>  
+Copyright (C) 2005 Andree Chea <andree@ss.ticalc.org>  
+Portions copyright (C) 2003 Benjamin Moody <benjamin@ecg.mit.edu>
+
+This program is free software; you can redistribute it and/or modify it under
+the terms of the GNU General Public License as published by the Free Software
+Foundation; either version 2 of the License, or (at your option) any later
+version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License along with
+this program; if not, write to the Free Software Foundation, Inc., 51 Franklin
+Street, Fifth Floor, Boston, MA  02110-1301, USA.
+
+ROM images are copyrighted by TI and should not be distributed.  The author of
+this program is not responsible for any issues that arise with your (mis)use of
+this program.
