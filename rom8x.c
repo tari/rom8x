@@ -42,7 +42,7 @@
 //#define NDEBUG
 
 #define FILE_NAME_LENGTH 128	//128 bytes maximum?
-#define CALCTYPE_MODELS 4		//the number of supported calc types
+#define CALCTYPE_MODELS 5		//the number of supported calc types
 #define CALCTYPE_LENGTH 5		//the maximum length for calcType (not including NULL)
 #define TRUE 1
 #define FALSE 0
@@ -62,18 +62,22 @@ const char calcTypeList[][CALCTYPE_LENGTH+1] = {		//a list of supported calcType
 	"83PBE",		//0
 	"83PSE",		//1
 	"84PBE",		//2
-	"84PSE" };		//3
+	"84PSE",		//3
+	"84CSE"			//4
+}
 
 const char calcTypeNames[][25] = {		//a list of names (TI-style)
 	"TI-83 Plus",						//0
 	"TI-83 Plus Silver Edition",		//1
 	"TI-84 Plus",						//2
-	"TI-84 Plus Silver Edition" };		//3
+	"TI-84 Plus Silver Edition",		//3
+	"TI-84 Plus Color Silver Edition"	//4
+};
 
 //Lookup arrays
-const int NumPagesList[] = { 0x1F + 1, 0x7F + 1, 0x3F + 1, 0x7F + 1 };
-const char ModelNumber[] = "3344";
-const char ModelType[] = "BSBS";
+const int NumPagesList[] = { 0x1F + 1, 0x7F + 1, 0x3F + 1, 0x7F + 1, 0xFF + 1 };
+const char ModelNumber[] = "33444";
+const char ModelType[] = "BSBSC";
 
 int validModel(char [], char [], int*);		//calcType, argv[1], calcModel
 int validHeader(FILE*, int, int);			//input file, type (see comments below)
@@ -230,7 +234,7 @@ int main(int argc, char* argv[])
 	}
 
 	fprintf(stderr,"Calculator model: %s\nDump 1: %s\n",calcTypeNames,fileNameDump1);
-	if (calcModel == 2 || calcModel == 3)
+	if (calcModel >= 2 && calcModel <= 4)
 		fprintf(stderr,"Dump 2: %s\n",fileNameDump2);
 	if (f8xu)
 		fprintf(stderr,"Upgrade file: %s\n",fileName8xu);
@@ -248,7 +252,7 @@ int main(int argc, char* argv[])
 		fprintf(stderr,"%s: invalid dump file.\n",fileNameDump1);
 		exit(EXIT_FAILURE);
 	}
-	if (calcModel == 2 || calcModel == 3)	//if 84PBE or 84PSE
+	if (calcModel >= 2 && calcModel <= 4)	//if 84PBE, PSE or CSE
 	{
 		fileDump2 = fopen(fileNameDump2,"rb");
 		if (!fileDump2)
@@ -308,15 +312,15 @@ int main(int argc, char* argv[])
 		exit(EXIT_FAILURE);
 	}
 
-	//Page [137]F
+	//Page [137F]F
 	if (!writePage(/*romFile,*/ fileDump1, numPages - 1))
 	{
 		//perror(fileNameDump2);
 		fprintf(stderr,"%s: unable to write %s to ROM file.\n",fileNameRom, fileNameDump1);
 		exit(EXIT_FAILURE);
 	}
-	//Page [26]F
-	if (calcModel == 2 || calcModel == 3)
+	//Page [26E]F
+	if (calcModel >= 2 && calcModel <= 4)
 	{
 		if (!writePage(/*romFile,*/ fileDump2, numPages - 1 - 0x10))
 		{
@@ -538,6 +542,8 @@ int write8xu(/*FILE *romFile,*/ FILE *file8xu, int calcModel)
 		semode = 0x60;						//OR mask
 	else if (calcModel == 2)				//if 84PBE
 		semode = 0x20;
+	else if (calcModel == 4)
+		semode = 0xe0;
 // 	else
 // 		semode = 0;
 
