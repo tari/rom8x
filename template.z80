@@ -2,7 +2,23 @@
 ; By Andree Chea
 
 .nolist
-#include "ti83plus.inc"
+;#include "ti83plus.inc"
+#define B_CALL(x) rst 28h \ .dw x
+
+#define _ChkFindSym 42F1h
+#define _ClrScrnFull 4546h
+#define _CreateAppVar 4E6Ah
+#define _EnoughMem 42FDh
+#define _FlashToRam 5017h
+#define _NewLine 452Eh
+#define _PutS 450Ah
+
+#define curRow 844Bh
+#define userMem 9D95h
+
+#define AppVarObj 15h
+#define t2ByteTok 0BBh
+#define tasmCmp 6Dh
 
 ; #define progName "83PSE"				;5 characters
 ; #define pageNum "1"
