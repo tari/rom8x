@@ -1,5 +1,5 @@
 CC=gcc
-CC_WIN=i486-mingw-gcc
+CC_WIN=i486-mingw32-gcc
 
 .PHONY: all
 all: README.txt README.html rom8x rom8x.exe

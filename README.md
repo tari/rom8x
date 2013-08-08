@@ -53,7 +53,7 @@ For example, the configuration for a standard 83+ (83PBE) might be as follows:
 
     #define progName "83PBE"
     #define pageNum "1"
-    #define boodPage 1Fh
+    #define bootPage 1Fh
 
 # Credits
 
