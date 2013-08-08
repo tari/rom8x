@@ -1,0 +1,70 @@
+; Gets page pageNum ($bootPage) on progName
+; By Andree Chea
+
+.nolist
+#include "ti83plus.inc"
+
+; #define progName "83PSE"				;5 characters
+; #define pageNum "1"
+; #define bootPage $7F
+.list
+
+.org userMem-2
+	.db t2ByteTok, tasmCmp
+
+	ld hl,saveVariable
+	rst 20h					;rMOV9TOOP1
+	B_CALL(_ChkFindSym)
+	ld hl,ErrDefined
+	jr nc,DisplayError
+	;ret nc					;already exists
+	ld hl,saveVariable
+	rst 20h					;rMOV9TOOP1
+	ld hl,$4000				;1 page
+	B_CALL(_EnoughMem)
+	ld hl,ErrMemory
+	jr c,DisplayError
+	;ret c					;Not enough memory
+	ex de,hl				;hl = $4000
+	B_CALL(_CreateAppVar)
+	inc de
+	inc de					;de -> data
+
+	ld a,bootPage
+	ld hl,$4000
+	ld bc,$4000
+	B_CALL(_FlashToRam)
+	
+	ld hl,txtSuccess
+	;ret
+
+DisplayError:
+	push hl
+	B_CALL(_ClrScrnFull)
+	ld hl,$0000
+	ld (curRow),hl
+	pop hl
+	B_CALL(_PutS)
+	B_CALL(_NewLine)
+	ret
+
+txtSuccess:
+	    ;0123456789ABCDEF
+	.db "AppVar D",progName,pageNum,"  "
+	.db "created.",$00
+
+ErrMemory:
+	    ;0123456789ABCDEF
+	.db "You do not have "
+	.db "16KBs of RAM    "
+	.db "free.",$00
+
+ErrDefined:
+	    ;0123456789ABCDEF
+	.db "AppVar D",progName,pageNum,"  "
+	.db "already exists.",$00
+
+saveVariable:
+	.db AppVarObj,"D",progName,pageNum,$00
+
+.end
