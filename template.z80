@@ -2,66 +2,58 @@
 ; By Andree Chea
 
 .nolist
-;#include "ti83plus.inc"
-#define B_CALL(x) rst 28h \ .dw x
+; Hack to see if we're building for CSE
+#define IS_CSE bootPage > 80h
 
-#define _ChkFindSym 42F1h
-#define _ClrScrnFull 4546h
-#define _CreateAppVar 4E6Ah
-#define _EnoughMem 42FDh
-#define _FlashToRam 5017h
-#define _NewLine 452Eh
-#define _PutS 450Ah
-
-#define curRow 844Bh
-#define userMem 9D95h
-
-#define AppVarObj 15h
-#define t2ByteTok 0BBh
-#define tasmCmp 6Dh
-
-; #define progName "83PSE"				;5 characters
-; #define pageNum "1"
-; #define bootPage $7F
+#if IS_CSE
+#include "ti84pcse.inc"
+_ClrScrnFull .equ _maybe_ClrScrnFull
+#else
+#include "ti83plus.inc"
+#endif
 .list
 
 .org userMem-2
+#if IS_CSE
+    .db tExtTok, tAsm84CCmp
+#else
 	.db t2ByteTok, tasmCmp
+#endif
 
 	ld hl,saveVariable
 	rst 20h					;rMOV9TOOP1
-	B_CALL(_ChkFindSym)
+	bcall(_ChkFindSym)
 	ld hl,ErrDefined
 	jr nc,DisplayError
 	;ret nc					;already exists
 	ld hl,saveVariable
 	rst 20h					;rMOV9TOOP1
 	ld hl,$4000				;1 page
-	B_CALL(_EnoughMem)
+	bcall(_EnoughMem)
 	ld hl,ErrMemory
 	jr c,DisplayError
 	;ret c					;Not enough memory
 	ex de,hl				;hl = $4000
-	B_CALL(_CreateAppVar)
+	bcall(_CreateAppVar)
 	inc de
 	inc de					;de -> data
 
 	ld a,bootPage
 	ld hl,$4000
 	ld bc,$4000
-	B_CALL(_FlashToRam)
+	bcall(_FlashToRam)
 	
 	ld hl,txtSuccess
 	;ret
 
 DisplayError:
 	push hl
-	B_CALL(_ClrScrnFull)
+	bcall(_ClrScrnFull)
 	ld hl,$0000
 	ld (curRow),hl
 	pop hl
-	B_CALL(_PutS)
-	B_CALL(_NewLine)
+	bcall(_PutS)
+	bcall(_NewLine)
 	ret
 
 txtSuccess:
