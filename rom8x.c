@@ -67,7 +67,7 @@ const char calcTypeList[][CALCTYPE_LENGTH+1] = {        //a list of supported ca
     "84CSE"            //4
 };
 
-const char *calcTypeNames[] = {        //a list of names (TI-style)
+const char *const calcTypeNames[] = {        //a list of names (TI-style)
     "TI-83 Plus",                        //0
     "TI-83 Plus Silver Edition",        //1
     "TI-84 Plus",                        //2
