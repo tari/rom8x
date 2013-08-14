@@ -43,12 +43,13 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 //#define NDEBUG
 
 #define FILE_NAME_LENGTH 128     //128 bytes maximum?
-#define CALCTYPE_MODELS 5        //the number of supported calc types
-#define CALCTYPE_LENGTH 5        //the maximum length for calcType (not including NULL)
-#define TRUE 1
-#define FALSE 0
-#define PAGE_SIZE 0x4000        //size of 1 page
+typedef enum {
+    false = 0,
+    true
+} bool;
 
+// Size of ROM page (16k)
+#define PAGE_SIZE 0x4000
 #define NONFLASH 1
 #define FLASH 2
 
@@ -59,35 +60,30 @@ const char usage[] = "USAGE: rom8x calcType [-1 fileName [-2 fileName]] [-u file
     "   -2 fileName:  file name of second dump\n"
     "   -u fileName:  OS upgrade file option\n";
 
-const char calcTypeList[][CALCTYPE_LENGTH+1] = {        //a list of supported calcTypes
-    "83PBE",        //0
-    "83PSE",        //1
-    "84PBE",        //2
-    "84PSE",        //3
-    "84CSE"            //4
+static const struct calc {
+    // calcType parameter
+    const char shortName[6];
+    // Friendly name
+    const char *const longName;
+    // Number of ROM pages
+    const unsigned numPages;
+    // Has USB (needs two pages dumped)
+    const bool hasUSB;
+} calcTypes[5] = {
+    { "83PBE", "TI-83 Plus", 0x20, false },
+    { "83PSE", "Ti-83 Plus Silver Edition", 0x80, false },
+    { "84PBE", "TI-84 Plus", 0x40, true },
+    { "84PSE", "TI-84 Plus Silver Edition", 0x80, true },
+    { "84CSE", "TI-84 Plus Color Silver Edition", 0x100, true }
 };
 
-const char *const calcTypeNames[] = {        //a list of names (TI-style)
-    "TI-83 Plus",                        //0
-    "TI-83 Plus Silver Edition",        //1
-    "TI-84 Plus",                        //2
-    "TI-84 Plus Silver Edition",        //3
-    "TI-84 Plus Color Silver Edition"    //4
-};
-
-//Lookup arrays
-const int NumPagesList[] = { 0x1F + 1, 0x7F + 1, 0x3F + 1, 0x7F + 1, 0xFF + 1 };
-const char ModelNumber[] = "33444";
-const char ModelType[] = "BSBSC";
-
-int validModel(char [], char [], int*);        //calcType, argv[1], calcModel
+const struct calc *determineTarget(const char *opt, int *calcModel);
 int validHeader(FILE*, int, int);            //input file, type (see comments below)
-int makeBlankRom(/*FILE*,*/ int);            //ROM file, number of pages
-int writePage(/*FILE*,*/ FILE*, int);        //ROM file, dump file, page #
-int write8xu(/*FILE*,*/ FILE*, int);        //ROM file, OS file, calcModel
-int GetOSVersion(FILE*, int*, int*);        //OS file, v_major, v_minor
+int makeBlankRom(FILE*, int);                //ROM file, number of pages
+int writePage(FILE*, FILE*, int);            //ROM file, dump file, page #
+int write8xu(FILE*, FILE*, int);             //ROM file, OS file, calcModel
+int GetOSVersion(FILE*, int*, int*);         //OS file, v_major, v_minor
 void ExitHandler(void);
-void (*ExitHandlerPtr)(void);
 
 //The following were only referenced in main()
 // -- if anywhere else, could cause global/local issues (mainly parameters)
@@ -103,14 +99,12 @@ int main(int argc, char* argv[])
     FILE *fileDump2 = NULL;
     FILE *file8xu = NULL;
 
+    const struct calc *targetCalc = NULL;
+
     // TODO WRONG WRONG WRONG
     // strcpy() from argv enables buffer overflow
     char fileNameDump1[FILE_NAME_LENGTH], fileNameDump2[FILE_NAME_LENGTH], fileName8xu[FILE_NAME_LENGTH];
-    char calcType[CALCTYPE_LENGTH+1];        //5 characters and NULL
     int calcModel;            //number of calculator (like _GetHardwareVersion)
-    char calcModelNumber;    //either '3' or '4'
-    char calcModelType;        //either 'B' or 'S'
-    int numPages;            //number of pages for the calc model
     int fD1, fD2, f8xu;        //flags if the command line arguments were present and valid
     int v_major, v_minor;
 
@@ -127,14 +121,14 @@ int main(int argc, char* argv[])
     //now loop through command-line arguments
     //printf("Parsing arguments...\n");
 
-    if (!validModel(calcType, argv[1], &calcModel))        //if model was not detected
-    {
-        fprintf(stderr,"%s is not a supported model.\n",calcType);
+    targetCalc = determineTarget(argv[1], &calcModel);
+    if (targetCalc == NULL) {
+        fprintf(stderr, "%s is not a supported calculator.\n", argv[1]);
         exit(EXIT_FAILURE);
     }
 
     //check if file names available or if 8xu file specified
-    fD1 = fD2 = f8xu = FALSE;
+    fD1 = fD2 = f8xu = false;
     count = 2;
     while (count < argc)
     //for (count = 2; count < argc; count += 2)    //pay attention to even # of arguments
@@ -146,17 +140,17 @@ int main(int argc, char* argv[])
                 switch (argv[count][1])
                 {
                     case '1':
-                        fD1 = TRUE;
+                        fD1 = true;
                         count++;            //increment to next argument
                         strcpy(fileNameDump1,argv[count]);
                         break;
                     case '2':
-                        fD2 = TRUE;
+                        fD2 = true;
                         count++;
                         strcpy(fileNameDump2,argv[count]);
                         break;
                     case 'u':
-                        f8xu = TRUE;
+                        f8xu = true;
                         count++;
                         strcpy(fileName8xu,argv[count]);
                         break;
@@ -182,65 +176,20 @@ int main(int argc, char* argv[])
     //if fD1 or fD2 were not specified, set the default file name
     //(maybe) also check to see if the correct # of files were specified
 
-//     switch (calcModel)
-//     {
-//         case 0:                    //83PBE
-//             calcModelNumber = '3';
-//             calcModelType = 'B';
-//             break;
-//         case 1:                    //83PSE
-//             calcModelNumber = '3';
-//             calcModelType = 'S';
-//             break;
-//         case 2:                    //84PBE
-//             calcModelNumber = '4';
-//             calcModelType = 'B';
-//             break;
-//         case 3:                    //84PSE
-//             calcModelNumber = '4';
-//             calcModelType = 'S';
-//             break;
-//         default:
-//             fprintf(stderr,"*** Fatal error!  You should never get this message! O_O");
-//             exit(EXIT_FAILURE);
-//     }
-
-//     //Why doesn't the following compile? O_o
-//     char ModelNumber[5] = "3344";
-//     char ModelType[] = "BSBS";
-    calcModelNumber = ModelNumber[calcModel];
-    calcModelType = ModelType[calcModel];
-
-    numPages = NumPagesList[calcModel];
-
     if (!fD1)        //set default file name for #1
     {
-        strcpy(fileNameDump1,"D8");
-        //strcat(fileNameDump1,calcModelNumber);
-        fileNameDump1[2] = calcModelNumber;
-        fileNameDump1[3] = '\0';        //NULL
-        strcat(fileNameDump1,"P");
-        //strcat(fileNameDump1,calcModelType);
-        fileNameDump1[4] = calcModelType;
-        fileNameDump1[5] = '\0';
-        strcat(fileNameDump1,"E1.8xv");
+        strcpy(fileNameDump1, targetCalc->shortName);
+        strcat(fileNameDump1, "1.8xv");
     }
     if (!fD2)        //set default file name for #2
     {
-        strcpy(fileNameDump2,"D8");
-        //strcat(fileNameDump2,calcModelNumber);
-        fileNameDump2[2] = calcModelNumber;
-        fileNameDump2[3] = '\0';        //NULL
-        strcat(fileNameDump2,"P");
-        //strcat(fileNameDump2,calcModelType);
-        fileNameDump2[4] = calcModelType;
-        fileNameDump2[5] = '\0';        //NULL
-        strcat(fileNameDump2,"E2.8xv");
+        strcpy(fileNameDump2, targetCalc->shortName);
+        strcat(fileNameDump2, "2.8xv");
     }
 
     fprintf(stderr,"Calculator model: %s\n"
                    "Dump 1: %s\n",
-                   calcTypeNames[calcModel], fileNameDump1);
+                   targetCalc->longName, fileNameDump1);
     if (calcModel >= 2 && calcModel <= 4)
         fprintf(stderr,"Dump 2: %s\n",fileNameDump2);
     if (f8xu)
@@ -288,49 +237,41 @@ int main(int argc, char* argv[])
         }
     }
     //and now the ROM file itself, but first initialize the name
-    strcpy(fileNameRom,calcType);
     if (f8xu)
     {
-        char temp[5];
         GetOSVersion(file8xu, &v_major, &v_minor);
-        //printf("%i\n",v_minor);
-        strcat(fileNameRom,"_v");
-        temp[0] = v_major + '0';
-        temp[1] = ((v_minor - (v_minor % 10))/10) + '0';
-        temp[2] = (v_minor % 10) + '0';
-        temp[3] = '\0';
-        strcat(fileNameRom,temp);
+        sprintf(fileNameRom, "%s_v%u%u.rom", targetCalc->shortName, v_major, v_minor);
+    } else {
+        sprintf(fileNameRom, "%s.rom", targetCalc->shortName);
     }
-    strcat(fileNameRom,".rom");
-    romFile = fopen(fileNameRom,"w+b");    //I suppose r+ could work to one's advantage, but it doesn't compile correctly...
+    romFile = fopen(fileNameRom,"w+b");
     if (!romFile)
     {
         perror(fileNameRom);
         exit(EXIT_FAILURE);
     }
 
-    romCreated = FALSE;
-    ExitHandlerPtr = ExitHandler;
-    atexit(ExitHandlerPtr);            //set the "error handler"
+    romCreated = false;
+    atexit(ExitHandler);
 
     //Let's make the ROM file!
-    if (!makeBlankRom(/*romFile,*/ numPages))
+    if (!makeBlankRom(romFile, targetCalc->numPages))
     {
         fprintf(stderr,"%s: unable to make blank ROM file.\n",fileNameRom);
         exit(EXIT_FAILURE);
     }
 
     //Page [137F]F
-    if (!writePage(/*romFile,*/ fileDump1, numPages - 1))
+    if (!writePage(romFile, fileDump1, targetCalc->numPages - 1))
     {
         //perror(fileNameDump2);
         fprintf(stderr,"%s: unable to write %s to ROM file.\n",fileNameRom, fileNameDump1);
         exit(EXIT_FAILURE);
     }
     //Page [26E]F
-    if (calcModel >= 2 && calcModel <= 4)
+    if (targetCalc->hasUSB)
     {
-        if (!writePage(/*romFile,*/ fileDump2, numPages - 1 - 0x10))
+        if (!writePage(romFile, fileDump2, targetCalc->numPages - 0x11))
         {
             fprintf(stderr,"%s: unable to write %s to ROM file.\n",fileNameRom, fileNameDump2);
             exit(EXIT_FAILURE);
@@ -338,19 +279,21 @@ int main(int argc, char* argv[])
     }
     if (f8xu)
     {
-        if (!write8xu(/*romFile,*/ file8xu, calcModel))
+        if (!write8xu(romFile, file8xu, calcModel))
         {
             fprintf(stderr,"%s: unable to write %s to ROM file.\n",fileNameRom, fileName8xu);
             exit(EXIT_FAILURE);
         }
         //validate the OS
-        fseek(romFile,0x0056l,SEEK_SET);
-        fwrite("\x5A\xA5",1,2,romFile);
-        fseek(romFile,(((long)(numPages - 2)) * 0x4000) + 0x1FE0, SEEK_SET);
-        fwrite("\0",1,1,romFile);
+        fseek(romFile, 0x56, SEEK_SET);
+        fputc(0x5A, romFile);
+        fputc(0xA5, romFile);
+
+        fseek(romFile,((targetCalc->numPages - 2) * PAGE_SIZE) + 0x1FE0, SEEK_SET);
+        fputc(0, romFile);
     }
 
-    romCreated = TRUE;        //Success!
+    romCreated = true;        //Success!
     //WE ARE DONE! Close all files
 
     //the following code is supposed to be in a function that is hooked and called whenever it exit()s, but....
@@ -359,7 +302,7 @@ int main(int argc, char* argv[])
         fclose(fileDump2);
     if (f8xu)
         fclose(file8xu);
-    //fclose(romFile);
+    fclose(romFile);
 
 //     if (!romCreated)
 //     {
@@ -372,33 +315,17 @@ int main(int argc, char* argv[])
     return (romCreated ? EXIT_SUCCESS : EXIT_FAILURE);
 }
 
-int validModel(char calcType[], char argv1[], int* calcModel)        //check to see if calculator is a valid model
-{
-    int valid;
-    int count;        //local var
-    size_t n;        //for strncpy()
+const struct calc *determineTarget(const char *opt, int *calcModel) {
+    const unsigned NCALCS = sizeof(calcTypes) / sizeof(calcTypes[0]);
+    unsigned i;
 
-    //see if calculator model is valid
-    n = strlen(argv1);        //get size of calcType argument
-    //printf("calcType length: %u\n",n);
-    if (n > CALCTYPE_LENGTH)
-        n = CALCTYPE_LENGTH;    //if too big, set to max size
-
-    //assert(n <= CALCTYPE_LENGTH);
-    strncpy(calcType, argv1, n);    //copy n bytes to calcType
-    calcType[n] = '\0';            //append NULL (remember zero-based indexed!)
-
-    valid = FALSE;    //temp = if calcType is a valid model
-    for (count = 0; count < CALCTYPE_MODELS; count++)
-    {
-        //printf("%s\n",calcTypeList[count]);
-        if (strcmp(calcType, calcTypeList[count]) == 0)
-        {
-            valid = TRUE;            //valid model detected
-            *calcModel = count;    //assume calcTypeList follows _GetHardwareVersion
+    for (i = 0; i < NCALCS; i++) {
+        if (strcmp(opt, calcTypes[i].shortName) == 0) {
+            *calcModel = i;
+            return &calcTypes[i];
         }
     }
-    return valid;
+    return NULL;
 }
 
 int validHeader(FILE *inFile, int type, int calcModel)
@@ -412,7 +339,7 @@ int validHeader(FILE *inFile, int type, int calcModel)
     //  inFile pointer is set to beginning of file
 
     int count;
-    //int valid = TRUE;
+    //int valid = true;
     char buffer[0x4D];        //input header size
     char tempName[9];        //a temporary string
     int bufferSize;
@@ -421,7 +348,7 @@ int validHeader(FILE *inFile, int type, int calcModel)
     int certID;
 
     if (fseek(inFile, 0, SEEK_SET))
-        return FALSE;        //BAD FILE!
+        return false;        //BAD FILE!
 
     bufferSize = (type == NONFLASH)? 0x37 + 0x11 : 0x4D;        //whee.. magic numbers :D
     fread(buffer, 1, bufferSize, inFile);
@@ -435,41 +362,41 @@ int validHeader(FILE *inFile, int type, int calcModel)
         if (strcmp(tempName, "**TI83F*") != 0)
         {
             //printf("Not valid signature\n");
-            return FALSE;
+            return false;
         }
         //Lengths == 0x4005? / first byte of header == 0x0D?
         if ((buffer[0x37] != 0x0D) || /*(buffer[0x39] != 0x05) || (buffer[0x3A] != 0x40) || */(buffer[0x39] != buffer[0x46]) || (buffer[0x3A] != buffer[0x47]))
         {
             //printf("%X %X%X != %X%X\n",buffer[0x37], buffer[0x3A], buffer[0x39], buffer[0x47], buffer[0x46]);
-            return FALSE;
+            return false;
         }
     }
     else if (type == FLASH)
     {
         if (strcmp(tempName, "**TIFL**") != 0)        //valid signature?
-            return FALSE;
+            return false;
         for (count = 0x11; count < 0x11 + 8; count++)
             tempName[count-0x11] = buffer[count];
         tempName[count-0x11] = '\0';
         if (strcmp(tempName, "basecode") != 0)        //OS file?
-            return FALSE;
+            return false;
         if ((buffer[0x30] != 0x73) || (buffer[0x31] != 0x23))    //83+ and OS file?
-            return FALSE;
+            return false;
 
         //Now check if 84+ OS specified for 84+ ROM and vice versa
         fseek(inFile, 0x68, SEEK_SET);        //another magic number! :D
         fscanf(inFile, "%1x", &certID);
         if ((certID == 0x0A) && (calcModel < 2))    //if 84+ OS for 83+ ROM
-            return FALSE;
+            return false;
         if ((certID == 0x04) && (calcModel > 1))    //if 83+ OS for 84+ ROM
-            return FALSE;
+            return false;
     }
 
     //return valid
     return (!fseek(inFile, 0, SEEK_SET));
 }
 
-int makeBlankRom(/*FILE *romFile,*/ int numPages)
+int makeBlankRom(FILE *romFile, int numPages)
 {
     //writes a blank ROM file
     //assume fseek() at beginning
@@ -483,38 +410,38 @@ int makeBlankRom(/*FILE *romFile,*/ int numPages)
     for (count = 0; count < numPages; count++)
     {
         if (fwrite(blankPage, 1, PAGE_SIZE, romFile) != PAGE_SIZE)
-            return FALSE;
+            return false;
     }
-    return TRUE;
+    return true;
 }
 
-int writePage(/*FILE *romFile,*/ FILE *dumpFile, int pageNum)
+int writePage(FILE *romFile, FILE *dumpFile, int pageNum)
 {
     //writes the specified page to romFile
     //automatically fseeks()
     void *buf = NULL;
-    int out = FALSE;
+    int out = false;
 
     if (fseek(romFile, pageNum * PAGE_SIZE, SEEK_SET) != 0)
-        return FALSE;
+        return false;
 
     // Skip 8xv header in dump file
     if (fseek(dumpFile, 0x48 + 2, SEEK_SET) != 0)
-        return FALSE;
+        return false;
 
     buf = malloc(PAGE_SIZE);
     if (fread(buf, PAGE_SIZE, 1, dumpFile) != 1)
         goto out;
     if (fwrite(buf, PAGE_SIZE, 1, romFile) != 1)
         goto out;
-    out = TRUE;
+    out = true;
 
 out:
     free(buf);
     return out;
 }
 
-int write8xu(/*FILE *romFile,*/ FILE *file8xu, int calcModel)
+int write8xu(FILE *romFile, FILE *file8xu, int calcModel)
 {
     //integrates the OS into the romFile
     //most of the following code is from rompatch by Benjamin Moody
@@ -555,7 +482,7 @@ int write8xu(/*FILE *romFile,*/ FILE *file8xu, int calcModel)
             {
                 //fprintf(stderr,"%s: hex file %s not in valid Intel format",
                 //argv[0],argv[i]);
-                return FALSE;
+                return false;
             }
 
             fscanf(file8xu,"%2X%2X%2X%2X",&nbytes,&dh,&dl,&rectype);        //read 'header' data
@@ -567,7 +494,7 @@ int write8xu(/*FILE *romFile,*/ FILE *file8xu, int calcModel)
                 if (fseek(romFile, position, SEEK_SET) != 0)
                 {
                     perror("fseeking on ROM file");
-                    return FALSE;
+                    return false;
                 }
             }
 
@@ -605,7 +532,7 @@ int write8xu(/*FILE *romFile,*/ FILE *file8xu, int calcModel)
 //                 fprintf(stderr,
 //                 "%s: invalid checksum %X (at %02X%02X, type %02X) in %s\n",
 //                 argv[0],check,dh,dl,rectype,argv[i]);
-                return FALSE;
+                return false;
             }
         }
         
@@ -615,7 +542,7 @@ int write8xu(/*FILE *romFile,*/ FILE *file8xu, int calcModel)
         while ((c == '\n') || (c == '\r') || (c == '\t') || (c == '\f') || (c == ' '));
     }
 
-    return TRUE;
+    return true;
 }
 
 int GetOSVersion(FILE *file8xu, int *v_major, int *v_minor)
