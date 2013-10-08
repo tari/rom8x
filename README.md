@@ -1,4 +1,71 @@
-# Building
+rom8x is a tool to create ROM files for TI-83+ series calculators which can
+be used in emulators. It supports the following calculators.
+
+ * TI-83+ (83PBE)
+ * TI-83+ Silver Edition (83PSE)
+ * TI-84+ (84PBE)
+ * TI-84+ Silver Edition (84PSE)
+ * TI-84+ Color Silver Edition (84CSE)
+
+# Usage
+
+The general process of building a ROM involves dumping some data from your
+calculator, then combining that with a calculator OS upgrade file to create
+a ROM.
+
+Before beginning, determine which of the above models your calculator is, and
+make note of the 5-character abbreviation that corresponds to it.  You will
+also need a linking program such as TiLP or TI-Connect and an appropriate cable
+to transfer files between your calculator and computer.
+
+## Dumping
+
+To dump the necessary data from your calculator, transfer the one or two 8xp
+files provided with rom8x that correspond to your calculator model to the
+calculator.  For example, if you have a TI-83+ use `G83PBE1.8xp`, or if you
+have a TI-84+ Silver Edition use `G84PSE1.8xp` and `G84PSE2.8xp`.
+
+Run the program you just put on your calculator. It will create a new AppVar in
+RAM with name corresponding to the program's name. For example, the program
+`G83PBE1` creates AppVar `D83PBE1`. Transfer this AppVar back to your computer
+and place it in the same directory as rom8x.
+
+If your calculator takes two programs (all 84+ models), repeat this process for
+the second program.
+
+## OS File
+
+Now acquire an OS upgrade file for your device. These can be obtained from
+[TI's web site](http://education.ti.com/)- find and download an OS file for
+your calculator, and save the resultant 8xu or 8Cu (for the 84CSE) in the same
+directory as rom8x.
+
+## Combining
+
+The final step involves running rom8x to combine all the files into a single
+ROM. Open a terminal (the exact procedure depends on your operating system- on
+Windows, open a Command Prompt) and `cd` to the directory containing your rom8x
+files.
+
+Now invoke rom8x with your calculator's model, and the -u option specifying the
+name of the OS file you obtained. For example, for a 83PBE:
+
+    rom8x 83PBE -u ti83plus_1.19.8xu
+
+Or for a 84CSE:
+
+    rom8x 84CSE -u Ti84Plus_OS.8Cu
+
+The program automatically looks for AppVar files with names corresponding to
+the specified calculator model. If you have renamed them, use the -1 and -2
+options to specify their names as applicable.
+
+    rom8x 84PBE -1 MyDump1.8xv -2 MyDump2.8xv -u 84pbe.8xu
+
+If the process is successful, rom8x will create a new .rom file in your working
+directory.
+
+# Building rom8x
 
 If you wish to build rom8x from source, there are two components that must be
 built separately: the PC-side application that joins dumped ROM pages with an
@@ -63,10 +130,11 @@ Send questions, comments, etc to Peter Marheine: <peter@taricorp.net>.
 
 ## Version History
 
- * 0.3 - ???
+ * 0.3 - 20131007
     + Add support for 84CSE (84+ Color Silver Edition)
     + Updated build scripts (no longer use the obsolete TASM and devpac8x)
     + Revised documentation
+    + Fixed various inefficiencies and security issues.
  * 0.2 - 20051209
     + Bug fix in G8?P?E programs
     + Completely recoded form scratch in C (v0.1 was in C++)
@@ -88,6 +156,7 @@ was provided by the following individuals:
  * Various testers for testing this package.
 
 ## License
+
 Copyright (C) 2013 Peter Marheine <peter@taricorp.net>  
 Copyright (C) 2005 Andree Chea <andree@ss.ticalc.org>  
 Portions copyright (C) 2003 Benjamin Moody <benjamin@ecg.mit.edu>
@@ -106,5 +175,5 @@ this program; if not, write to the Free Software Foundation, Inc., 51 Franklin
 Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 ROM images are copyrighted by TI and should not be distributed.  The author of
-this program is not responsible for any issues that arise with your (mis)use of
+this program is not responsible for any issues that arise from your (mis)use of
 this program.

@@ -103,7 +103,9 @@ int main(int argc, char* argv[])
 
     // TODO WRONG WRONG WRONG
     // strcpy() from argv enables buffer overflow
-    char fileNameDump1[FILE_NAME_LENGTH], fileNameDump2[FILE_NAME_LENGTH], fileName8xu[FILE_NAME_LENGTH];
+    char *fileNameDump1 = NULL;
+    char *fileNameDump2 = NULL:
+    char fileName8xu[FILE_NAME_LENGTH];
     int calcModel;            //number of calculator (like _GetHardwareVersion)
     int fD1, fD2, f8xu;        //flags if the command line arguments were present and valid
     int v_major, v_minor;
@@ -142,17 +144,17 @@ int main(int argc, char* argv[])
                     case '1':
                         fD1 = true;
                         count++;            //increment to next argument
-                        strcpy(fileNameDump1,argv[count]);
+                        fileNameDump1 = strdup(argv[count]);
                         break;
                     case '2':
                         fD2 = true;
                         count++;
-                        strcpy(fileNameDump2,argv[count]);
+                        fileNameDump2 = strdup(argv[count]);
                         break;
                     case 'u':
                         f8xu = true;
                         count++;
-                        strcpy(fileName8xu,argv[count]);
+                        fileName8xu = strdup(fileName8xu);
                         break;
                     default:
                         fprintf(stderr,"%s: invalid switch.\n",argv[count]);
@@ -176,21 +178,22 @@ int main(int argc, char* argv[])
     //if fD1 or fD2 were not specified, set the default file name
     //(maybe) also check to see if the correct # of files were specified
 
+    size_t n_default = strlen(targetCalc->shortName) + 5 + 1;
     if (!fD1)        //set default file name for #1
     {
-        strcpy(fileNameDump1, targetCalc->shortName);
-        strcat(fileNameDump1, "1.8xv");
+        fileNameDump1 = malloc(n_default);
+        snprintf(fileNameDump1, n_default, "%s1.8xv", targetCalc->shortName);
     }
     if (!fD2)        //set default file name for #2
     {
-        strcpy(fileNameDump2, targetCalc->shortName);
-        strcat(fileNameDump2, "2.8xv");
+        fileNameDump2 = malloc(n_default);
+        snprintf(fileNameDump2, n_default, "%s2.8xv", targetCalc->shortName);
     }
 
     fprintf(stderr,"Calculator model: %s\n"
                    "Dump 1: %s\n",
                    targetCalc->longName, fileNameDump1);
-    if (calcModel >= 2 && calcModel <= 4)
+    if (targetCalc->hasUSB)
         fprintf(stderr,"Dump 2: %s\n",fileNameDump2);
     if (f8xu)
         fprintf(stderr,"Upgrade file: %s\n",fileName8xu);
