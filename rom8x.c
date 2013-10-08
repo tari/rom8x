@@ -23,6 +23,12 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+
+void fclose_nn(FILE *f) {
+	if (f)
+		fclose(f);
+}
+
 //#include <assert.h>
 
 /*
@@ -53,7 +59,7 @@ typedef enum {
 #define NONFLASH 1
 #define FLASH 2
 
-const char usage[] = "USAGE: rom8x calcType [-1 fileName [-2 fileName]] [-u fileName]\n"
+const char usage[] = "USAGE: rom8x calcType [-1 fileName [-2 fileName]] -u fileName\n"
     "where:\n"
     "      calcType:  calculator model (83PBE|83PSE|84PBE|84PSE|84CSE)\n"
     "   -1 fileName:  file name of first dump\n"
@@ -90,22 +96,20 @@ void ExitHandler(void);
 //moved here because of ExitHandler(void)
 int romCreated;                //flag if the ROM file was created
 char fileNameRom[FILE_NAME_LENGTH];
-FILE *romFile;                //output
+// Output file
+FILE *romFile;
+// Input files
+FILE *fileDump1 = NULL;
+FILE *fileDump2 = NULL;
+FILE *file8xu = NULL;
 
 int main(int argc, char* argv[])
 {
-    // Input files
-    FILE *fileDump1 = NULL;
-    FILE *fileDump2 = NULL;
-    FILE *file8xu = NULL;
-
     const struct calc *targetCalc = NULL;
 
-    // TODO WRONG WRONG WRONG
-    // strcpy() from argv enables buffer overflow
     char *fileNameDump1 = NULL;
-    char *fileNameDump2 = NULL:
-    char fileName8xu[FILE_NAME_LENGTH];
+    char *fileNameDump2 = NULL;
+    const char *fileName8xu = NULL;
     int calcModel;            //number of calculator (like _GetHardwareVersion)
     int fD1, fD2, f8xu;        //flags if the command line arguments were present and valid
     int v_major, v_minor;
@@ -133,7 +137,6 @@ int main(int argc, char* argv[])
     fD1 = fD2 = f8xu = false;
     count = 2;
     while (count < argc)
-    //for (count = 2; count < argc; count += 2)    //pay attention to even # of arguments
     {
         if (argv[count][0] == '-')
         {
@@ -144,17 +147,17 @@ int main(int argc, char* argv[])
                     case '1':
                         fD1 = true;
                         count++;            //increment to next argument
-                        fileNameDump1 = strdup(argv[count]);
+                        fileNameDump1 = argv[count];
                         break;
                     case '2':
                         fD2 = true;
                         count++;
-                        fileNameDump2 = strdup(argv[count]);
+                        fileNameDump2 = argv[count];
                         break;
                     case 'u':
                         f8xu = true;
                         count++;
-                        fileName8xu = strdup(fileName8xu);
+                        fileName8xu = argv[count];
                         break;
                     default:
                         fprintf(stderr,"%s: invalid switch.\n",argv[count]);
@@ -172,6 +175,12 @@ int main(int argc, char* argv[])
         }
         count++;
     }
+
+	if (!f8xu) {
+		fprintf(stderr, "Upgrade file (-u *.8xu) must be specified.\n");
+		fprintf(stderr, usage);
+		exit(EXIT_FAILURE);	
+	}
 
     //fD1, fD2, and f8xu determine if there was a command-line switch available.
     //    next, they will determine if the files were successfully opened, but not now.
@@ -195,58 +204,44 @@ int main(int argc, char* argv[])
                    targetCalc->longName, fileNameDump1);
     if (targetCalc->hasUSB)
         fprintf(stderr,"Dump 2: %s\n",fileNameDump2);
-    if (f8xu)
-        fprintf(stderr,"Upgrade file: %s\n",fileName8xu);
+    fprintf(stderr,"Upgrade file: %s\n",fileName8xu);
     fprintf(stderr,"\n");
 
     //Now open files (and check if the right files exist for the right calculator)
     fileDump1 = fopen(fileNameDump1,"rb");    //open in reading and binary
-    if (!fileDump1)
-    {
+    if (!fileDump1) {
         perror(fileNameDump1);
         exit(EXIT_FAILURE);
-    }
-    if (!validHeader(fileDump1, NONFLASH, calcModel))
-    {
+    } else if (!validHeader(fileDump1, NONFLASH, calcModel)) {
         fprintf(stderr,"%s: invalid dump file.\n",fileNameDump1);
         exit(EXIT_FAILURE);
     }
-    if (calcModel >= 2 && calcModel <= 4)    //if 84PBE, PSE or CSE
+
+    if (targetCalc->hasUSB)
     {
         fileDump2 = fopen(fileNameDump2,"rb");
-        if (!fileDump2)
-        {
+        if (!fileDump2) {
             perror(fileNameDump2);
             exit(EXIT_FAILURE);
-        }
-        if (!validHeader(fileDump2, NONFLASH, calcModel))
-        {
+        } else if (!validHeader(fileDump2, NONFLASH, calcModel)) {
             fprintf(stderr,"%s: invalid dump file.\n",fileNameDump2);
             exit(EXIT_FAILURE);
         }
     }
-    if (f8xu)        //OS upgrade file
-    {
-        file8xu = fopen(fileName8xu,"rb");
-        if (!file8xu)
-        {
-            perror(fileName8xu);
-            exit(EXIT_FAILURE);
-        }
-        if (!validHeader(file8xu, FLASH, calcModel))
-        {
-            fprintf(stderr,"%s: invalid OS file.\n",fileName8xu);
-            exit(EXIT_FAILURE);
-        }
+
+    file8xu = fopen(fileName8xu,"rb");
+    if (!file8xu) {
+        perror(fileName8xu);
+        exit(EXIT_FAILURE);
+    } else if (!validHeader(file8xu, FLASH, calcModel)) {
+        fprintf(stderr,"%s: invalid OS file.\n",fileName8xu);
+        exit(EXIT_FAILURE);
     }
+
     //and now the ROM file itself, but first initialize the name
-    if (f8xu)
-    {
-        GetOSVersion(file8xu, &v_major, &v_minor);
-        sprintf(fileNameRom, "%s_v%u%u.rom", targetCalc->shortName, v_major, v_minor);
-    } else {
-        sprintf(fileNameRom, "%s.rom", targetCalc->shortName);
-    }
+    GetOSVersion(file8xu, &v_major, &v_minor);
+    snprintf(fileNameRom, sizeof(fileNameRom), "%s_v%u%u.rom", targetCalc->shortName, v_major, v_minor);
+
     romFile = fopen(fileNameRom,"w+b");
     if (!romFile)
     {
@@ -255,8 +250,6 @@ int main(int argc, char* argv[])
     }
 
     romCreated = false;
-    atexit(ExitHandler);
-
     //Let's make the ROM file!
     if (!makeBlankRom(romFile, targetCalc->numPages))
     {
@@ -280,41 +273,23 @@ int main(int argc, char* argv[])
             exit(EXIT_FAILURE);
         }
     }
-    if (f8xu)
+	// Contents of OS file
+    if (!write8xu(romFile, file8xu, calcModel))
     {
-        if (!write8xu(romFile, file8xu, calcModel))
-        {
-            fprintf(stderr,"%s: unable to write %s to ROM file.\n",fileNameRom, fileName8xu);
-            exit(EXIT_FAILURE);
-        }
-        //validate the OS
-        fseek(romFile, 0x56, SEEK_SET);
-        fputc(0x5A, romFile);
-        fputc(0xA5, romFile);
-
-        fseek(romFile,((targetCalc->numPages - 2) * PAGE_SIZE) + 0x1FE0, SEEK_SET);
-        fputc(0, romFile);
+        fprintf(stderr,"%s: unable to write %s to ROM file.\n",fileNameRom, fileName8xu);
+        exit(EXIT_FAILURE);
     }
+    // Mark OS as valid
+    fseek(romFile, 0x56, SEEK_SET);
+    fputc(0x5A, romFile);
+    fputc(0xA5, romFile);
+
+    fseek(romFile,((targetCalc->numPages - 2) * PAGE_SIZE) + 0x1FE0, SEEK_SET);
+    fputc(0, romFile);
 
     romCreated = true;        //Success!
-    //WE ARE DONE! Close all files
 
-    //the following code is supposed to be in a function that is hooked and called whenever it exit()s, but....
-    fclose(fileDump1);
-    if (fD2)
-        fclose(fileDump2);
-    if (f8xu)
-        fclose(file8xu);
-    fclose(romFile);
-
-//     if (!romCreated)
-//     {
-//         remove(fileNameRom);
-//         fprintf(stderr,"\n%s was not created.\n",fileNameRom);
-//         return EXIT_FAILURE;
-//     }
-//     //else
-//     fprintf(stderr,"\n%s was successfully created.\n",fileNameRom);
+	// Cleanup handled in atexit()
     return (romCreated ? EXIT_SUCCESS : EXIT_FAILURE);
 }
 
@@ -454,7 +429,7 @@ int write8xu(FILE *romFile, FILE *file8xu, int calcModel)
     int pagenum=0;
     long position;
     int j;
-    int bp=0;
+    //int bp=0;
     int semode=0;                        //be sure to init to 0
     //char ibuf[0x4d];
     int parts_remaining/* = 1*/;
@@ -566,15 +541,16 @@ int GetOSVersion(FILE *file8xu, int *v_major, int *v_minor)
 
 void ExitHandler(void)
 {
-    //We quit from somewhere -- display the message and delete romFile
-    if (!romCreated)
-    {
+	// Close all files
+	fclose_nn(fileDump1);
+	fclose_nn(fileDump2);
+	fclose_nn(file8xu);
+	fclose_nn(romFile);
+
+    if (!romCreated) {
         fclose(romFile);
         remove(fileNameRom);
         fprintf(stderr,"%s was not created.\n",fileNameRom);
-    }
-    else
+    } else
         fprintf(stderr,"%s was successfully created.\n",fileNameRom);
-
-    //since the FILEs are closed at termination, it is not NEEDED to close them here
 }
