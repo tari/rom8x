@@ -127,10 +127,12 @@ For example, the configuration for a standard 83+ (83PBE) might be as follows:
 ## Contact
 
 Send questions, comments, etc to Peter Marheine: <peter@taricorp.net>.
+The canonical source code for rom8x lives on
+[Bitbucket](https://bitbucket.org/tari/rom8x/).
 
 ## Version History
 
- * 0.3 - 20131007
+ * 0.3 - 20131105
     + Add support for 84CSE (84+ Color Silver Edition)
     + Updated build scripts (no longer use the obsolete TASM and devpac8x)
     + Revised documentation
