@@ -11,5 +11,8 @@ rom8x: rom8x.c
 rom8x.exe: rom8x.c
 	$(CC_WIN) $(CFLAGS) -o rom8x.exe rom8x.c
 
-README.txt README.html: README.md style.css
-	pandoc -s --self-contained --toc -N --css style.css -o $@ README.md
+README.txt: README.md
+	pandoc -s --toc -o $@ README.md
+
+README.html: README.md html/style.css html/nav.js
+	pandoc -s --self-contained --toc -N -H html/nav.js --css html/style.css -o $@ README.md
