@@ -25,8 +25,8 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include <ctype.h>
 
 void fclose_nn(FILE *f) {
-	if (f)
-		fclose(f);
+    if (f)
+        fclose(f);
 }
 
 //#include <assert.h>
@@ -176,11 +176,11 @@ int main(int argc, char* argv[])
         count++;
     }
 
-	if (!f8xu) {
-		fprintf(stderr, "Upgrade file (-u *.8xu) must be specified.\n");
-		fprintf(stderr, usage);
-		exit(EXIT_FAILURE);	
-	}
+    if (!f8xu) {
+        fprintf(stderr, "Upgrade file (-u *.8xu) must be specified.\n");
+        fprintf(stderr, usage);
+        exit(EXIT_FAILURE);    
+    }
 
     //fD1, fD2, and f8xu determine if there was a command-line switch available.
     //    next, they will determine if the files were successfully opened, but not now.
@@ -191,14 +191,15 @@ int main(int argc, char* argv[])
     if (!fD1)        //set default file name for #1
     {
         fileNameDump1 = malloc(n_default);
-        snprintf(fileNameDump1, n_default, "%s1.8xv", targetCalc->shortName);
+        snprintf(fileNameDump1, n_default, "D%s1.8xv", targetCalc->shortName);
     }
     if (!fD2)        //set default file name for #2
     {
         fileNameDump2 = malloc(n_default);
-        snprintf(fileNameDump2, n_default, "%s2.8xv", targetCalc->shortName);
+        snprintf(fileNameDump2, n_default, "D%s2.8xv", targetCalc->shortName);
     }
 
+    fputs("== PARAMETERS ==", stderr);
     fprintf(stderr,"Calculator model: %s\n"
                    "Dump 1: %s\n",
                    targetCalc->longName, fileNameDump1);
@@ -273,7 +274,7 @@ int main(int argc, char* argv[])
             exit(EXIT_FAILURE);
         }
     }
-	// Contents of OS file
+    // Contents of OS file
     if (!write8xu(romFile, file8xu, calcModel))
     {
         fprintf(stderr,"%s: unable to write %s to ROM file.\n",fileNameRom, fileName8xu);
@@ -288,8 +289,8 @@ int main(int argc, char* argv[])
     fputc(0, romFile);
 
     romCreated = true;        //Success!
+    printf("Created %s successfully\n", fileNameRom);
 
-	// Cleanup handled in atexit()
     return (romCreated ? EXIT_SUCCESS : EXIT_FAILURE);
 }
 
@@ -541,11 +542,11 @@ int GetOSVersion(FILE *file8xu, int *v_major, int *v_minor)
 
 void ExitHandler(void)
 {
-	// Close all files
-	fclose_nn(fileDump1);
-	fclose_nn(fileDump2);
-	fclose_nn(file8xu);
-	fclose_nn(romFile);
+    // Close all files
+    fclose_nn(fileDump1);
+    fclose_nn(fileDump2);
+    fclose_nn(file8xu);
+    fclose_nn(romFile);
 
     if (!romCreated) {
         fclose(romFile);

@@ -1,7 +1,7 @@
-CC=gcc
-CC_WIN=i486-mingw32-gcc
+CC ?= gcc
+CC_WIN ?= i686-w64-mingw32-gcc
 
-CFLAGS=-Wall -Wextra -Os
+CFLAGS ?= -Wall -Wextra -Os
 
 .PHONY: all
 all: README.txt README.html rom8x rom8x.exe

@@ -132,6 +132,9 @@ The canonical source code for rom8x lives on
 
 ## Version History
 
+ * 0.3.1 - 20140319
+    + Prepend 'D' to assumed 8xv file names to match generated files
+    + Display a message on success for clarity
  * 0.3 - 20131105
     + Add support for 84CSE (84+ Color Silver Edition)
     + Updated build scripts (no longer use the obsolete TASM and devpac8x)
