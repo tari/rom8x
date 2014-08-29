@@ -187,7 +187,7 @@ int main(int argc, char* argv[])
     //if fD1 or fD2 were not specified, set the default file name
     //(maybe) also check to see if the correct # of files were specified
 
-    size_t n_default = strlen(targetCalc->shortName) + 5 + 1;
+    size_t n_default = strlen(targetCalc->shortName) + 6 + 1;
     if (!fD1)        //set default file name for #1
     {
         fileNameDump1 = malloc(n_default);
@@ -199,7 +199,7 @@ int main(int argc, char* argv[])
         snprintf(fileNameDump2, n_default, "D%s2.8xv", targetCalc->shortName);
     }
 
-    fputs("== PARAMETERS ==", stderr);
+    fputs("== PARAMETERS ==\n", stderr);
     fprintf(stderr,"Calculator model: %s\n"
                    "Dump 1: %s\n",
                    targetCalc->longName, fileNameDump1);

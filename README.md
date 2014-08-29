@@ -132,6 +132,9 @@ The canonical source code for rom8x lives on
 
 ## Version History
 
+ * 0.3.2 - 20140829
+    + Fix truncation of automatic filenames for 8xv files introduced in
+      version 0.3.1.
  * 0.3.1 - 20140319
     + Prepend 'D' to assumed 8xv file names to match generated files
     + Display a message on success for clarity
