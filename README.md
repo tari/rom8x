@@ -25,7 +25,8 @@ files provided with rom8x that correspond to your calculator model to the
 calculator.  For example, if you have a TI-83+ use `G83PBE1.8xp`, or if you
 have a TI-84+ Silver Edition use `G84PSE1.8xp` and `G84PSE2.8xp`.
 
-Run the program you just put on your calculator. It will create a new AppVar in
+Run the program you just put on your calculator. They are assembly programs,
+so be sure to use `Asm(`, like `Asm(G83PBE1`. It will create a new AppVar in
 RAM with name corresponding to the program's name. For example, the program
 `G83PBE1` creates AppVar `D83PBE1`. Transfer this AppVar back to your computer
 and place it in the same directory as rom8x.
