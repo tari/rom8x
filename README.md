@@ -133,6 +133,8 @@ The canonical source code for rom8x lives on
 
 ## Version History
 
+ * 0.3.3 - 20151128
+    + Note in README that programs must be run with `Asm(`.
  * 0.3.2 - 20140829
     + Fix truncation of automatic filenames for 8xv files introduced in
       version 0.3.1.
