@@ -129,7 +129,7 @@ For example, the configuration for a standard 83+ (83PBE) might be as follows:
 
 Send questions, comments, etc to Peter Marheine: <peter@taricorp.net>.
 The canonical source code for rom8x lives on
-[Bitbucket](https://bitbucket.org/tari/rom8x/).
+[Gitlab](https://gitlab.com/taricorp/rom8x).
 
 ## Version History
 
